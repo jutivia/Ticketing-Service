@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import { RequestvalidationError } from '../errors';
 const router = express.Router();
 
 router.post(
   '/api/users/signup',
   [
-    body('email').isEmail().withMessage('Email must be provided'),
+    body('email').isEmail().withMessage('Valid email must be provided'),
     body('password')
       .trim()
       .isLength({ min: 4, max: 20 })
@@ -14,7 +15,7 @@ router.post(
   (req: Request, res: Response) => {
      const errors = validationResult(req)
      if(!errors.isEmpty()){
-      return res.status(400).send({success: false, error: errors.array()})
+      throw new RequestvalidationError(errors.array())
      }
     const { email, password } = req.body
 

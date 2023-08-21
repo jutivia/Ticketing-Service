@@ -1,6 +1,9 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { RequestvalidationError } from '../errors';
+import { BadRequestError} from '../errors';
+import { validateRequest } from '../middlewares/validateRequest';
+import { User } from '../models/user';
+import jwt from 'jsonwebtoken';
 const router = express.Router();
 
 router.post(
@@ -11,15 +14,24 @@ router.post(
       .trim()
       .isLength({ min: 4, max: 20 })
       .withMessage('Password must be between 4 and 20 characters'),
-  ],
-  (req: Request, res: Response) => {
-     const errors = validationResult(req)
-     if(!errors.isEmpty()){
-      throw new RequestvalidationError(errors.array())
-     }
+  ], validateRequest,
+  async (req: Request, res: Response) => {
     const { email, password } = req.body
+    const existingUser = await User.findOne({email})
+    if(existingUser){
+     throw new BadRequestError('Email exists')
+    }
 
-    res.send({data: {email, password}});
+    const user = User.buildUser({email, password})
+    await user.save()
+
+    // Generate jwt and store on the session object
+    const userJwt = user.createToken(user)
+
+    req.session = {
+      jwt: userJwt
+    }
+    res.status(201).send(user)
   }
 );
 

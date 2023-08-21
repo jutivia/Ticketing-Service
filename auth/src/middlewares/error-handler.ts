@@ -5,7 +5,7 @@ export const errorhandler = (err:Error, req:Request, res:Response, next:NextFunc
   if(err instanceof CustomError) {
    return  res.status(err.code).send({
       success: false,
-      message: err.formatError()
+      errors: err.formatError()
     })
   }
   res.status(400).send({
